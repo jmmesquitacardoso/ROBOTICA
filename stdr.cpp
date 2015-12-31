@@ -11,10 +11,12 @@
 #include <algorithm>
 #include <vector>
 #include <stdint.h>
+#include <libastar/astar.h>
 
 using namespace std;
 
 #define PI 3.14159265359
+#define SENSOR_RANGE 150
 
 ros::Subscriber laserSub;
 ros::Subscriber posSub;
@@ -61,10 +63,9 @@ void range0MessageReceived (const sensor_msgs::Range& msg) {
 }
 
 void posMsgReceived(const nav_msgs::Odometry::ConstPtr& msg){
-	/*ROS_INFO("POSITION INFO");
 	geometry_msgs::PoseWithCovariance pose = msg->pose;
-	ROS_INFO("POSITION = %f %f", pose.pose.position.x, pose.pose.position.y);
-	ROS_INFO("POSITION IN PIXELS = %f %f", pose.pose.position.x/0.02, pose.pose.position.y/0.02);*/
+	currentRobotX = pose.pose.position.x / 0.02;
+	currentRobotY = pose.pose.position.y / 0.02;
 }
 
 void occupancyMsgReceived(const nav_msgs::OccupancyGrid::ConstPtr& msg){
@@ -95,13 +96,15 @@ void occupancyMsgReceived(const nav_msgs::OccupancyGrid::ConstPtr& msg){
 			ROS_INFO("Rotation = %f", robotRotation);
 		}
 		pub.publish(msg1);
-	}
-	
-	for(int i = 0; i < matrix.size(); i++){
-		for(int j = 0; j < matrix[i].size(); j++){
-			if(sqrt(pow((i + currentRobotX),2) + pow((j + currentRobotY),2))) {
-				// call a star here to get the path to the objective
-				followingObstacle = true;
+
+		for(int i = 0; i < matrix.size(); i++){
+			for(int j = 0; j < matrix[i].size(); j++){
+				if(sqrt(pow((i + currentRobotY),2) + pow((j + currentRobotX),2)) >= SENSOR_RANGE && matrix[i][j] == -1) {
+					// call a star here to get the path to the objective
+					ROS_INFO("NEXT POINT: %d %d", i, j);
+					followingObstacle = true;
+					return;
+				}
 			}
 		}
 	}
